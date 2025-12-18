@@ -1,0 +1,269 @@
+"""
+Processeur principal pour le traitement des factures.
+"""
+
+import fitz
+import pandas as pd
+import warnings
+import os
+import shutil
+from datetime import datetime
+from .facture_functions import *
+
+# Dictionnaire des fournisseurs et leurs mots-clés
+DICT_FOURNI_CLE = {
+    'ANDRIC': 'ANDRIC SAS',
+    'BASSE COUR BIO': 'SAS LA BASSE COUR BIO',
+    'RELAIS LOCAL': 'lerelaislocal',
+    'RELAIS VERT': 'relais-vert',
+    'RELAIS VERT AC': 'Relais Vert CARPENTRAS',
+    'SALAISONS DE CHARTREUSE': 'SAS Les Salaisons de Chartreuse',
+    "EKIBIO": "EKIBIO SAS",
+    "EPICE": "SCOP EPICE",
+    "COOP LAITIERE DE YENNE": "SOCIETE COOPERATIVE LAITIERE de YENNE",
+    "AGIDRA": "SNC AGIDRA",
+    'DDS': "DDS DISTRIBUTION",
+    "HALLE BIO D'OCCITANIE": "halle-bio",
+    'GRAP LOGISTIQUE': "GRAP - Logistique",
+    "GRAP EQUIPE INTERNE": "GRAP Equipe Interne",
+    "GRAP EQUIPE INTERNE 2": "Grap - Temps coopératif",
+    "FULCHIRON": 'www.patrimoniam.com',
+    "T'AIR DE FAMILLE": "FR7616807001873221070921377",
+    "CAVE BIO": "LA CAVE BIO",
+    "BRASSERIE DU PILAT": 'brasseriedupilat',
+    "ECODIS": "SDEB ECODIS",
+    'GRAIN DE SAIL': "Grain de Sail SAS",
+    "TERRE ADELICE": "N°Siret : 403 881 881 00029",
+    "ENERGIE D'ICI": "www.energiedici.fr",
+    "FERME BIO MARGERIE": "SARL Margerie",
+    "ALTERMONTS": "SAS AlterMonts",
+}
+
+# Dictionnaire des fournisseurs et leurs fonctions
+DICT_FOURNI_FONCTION = {
+    'ANDRIC': fonction_andric,
+    'BASSE COUR BIO': fonction_basse_cour,
+    'RELAIS LOCAL': fonction_relais_local,
+    'RELAIS VERT': fonction_relais_vert,
+    'RELAIS VERT AC': fonction_relais_vert,
+    'SALAISONS DE CHARTREUSE': fonction_salaisons_de_chartreuse,
+    "EKIBIO": fonction_ekibio,
+    "EPICE": fonction_epice,
+    "COOP LAITIERE DE YENNE": fonction_coop_yenne,
+    "AGIDRA": fonction_agidra,
+    "DDS": fonction_dds,
+    "HALLE BIO D'OCCITANIE": fonction_relais_vert,
+    'GRAP LOGISTIQUE': fonction_grap,
+    "GRAP EQUIPE INTERNE": fonction_grap,
+    "GRAP EQUIPE INTERNE 2": fonction_grap,
+    "FULCHIRON": fonction_fulchiron,
+    "T'AIR DE FAMILLE": fonction_tair_famille,
+    "CAVE BIO": fonction_cave_bio,
+    "BRASSERIE DU PILAT": fonction_brasserie_pilat,
+    "ECODIS": fonction_ecodis,
+    "GRAIN DE SAIL": fonction_grain_de_sail,
+    "TERRE ADELICE": fonction_terre_adelice,
+    "ENERGIE D'ICI": fonction_energie_ici,
+    "FERME BIO MARGERIE": fonction_margerie,
+    "ALTERMONTS": fonction_altermonts,
+}
+
+# Liste des fournisseurs gérés par LCR
+FOURNI_LCR = [
+    'CAVE BIO',
+    'CDS',
+    'COOP LAITIERE DE YENNE',
+    'CROC',
+    'DDS',
+    'EKIBIO',
+    'EPICE',
+    'GRAIN DE SAIL',
+    'GRAVIER',
+    'LABO GRAVIER',
+    'LES VIGNERONS DU SOMMIEROIS',
+    'RELAIS VERT',
+    'RELAIS VERT AC',
+    'SOCAF - LES CAFES DAGOBERT',
+    "HALLE BIO D'OCCITANIE",
+]
+
+class FactureProcessor:
+    """Classe pour traiter les factures PDF."""
+    
+    def __init__(self, input_dir="data/input"):
+        self.input_dir = input_dir
+        self.df = pd.DataFrame(columns=['Fournisseur', 'Facture', 'Date', 'Montant'])
+        self.processed_files = []
+        self.unprocessed_files = []
+        self.processed_lcr_files = []
+        self.file_rename_dict = {}
+        
+    def process_directory(self):
+        """Traite toutes les factures dans le répertoire d'entrée."""
+        # Désactiver les warnings
+        warnings.filterwarnings('ignore')
+        
+        # Récupération des factures
+        noms_factures = os.listdir(self.input_dir)
+        noms_exclus = ['.DS_Store', 'exemple', '.gitkeep']
+        noms_factures = [n for n in noms_factures if n not in noms_exclus and n.lower().endswith('.pdf')]
+        
+        if not noms_factures:
+            return self.df, self.processed_files, self.unprocessed_files, self.processed_lcr_files
+            
+        for fact in noms_factures:
+            try:
+                self._process_single_file(fact)
+            except Exception as e:
+                print(f"Erreur lors du traitement de {fact}: {str(e)}")
+                self.unprocessed_files.append(fact)
+        
+        # Post-traitement du DataFrame
+        self._post_process_df()
+        
+        # Réactiver les warnings
+        warnings.filterwarnings('always')
+        
+        return self.df, self.processed_files, self.unprocessed_files, self.processed_lcr_files
+    
+    def _process_single_file(self, filename):
+        """Traite un seul fichier PDF."""
+        filepath = os.path.join(self.input_dir, filename)
+        
+        with fitz.open(filepath) as doc:
+            # Identification du fournisseur
+            fournisseur = self._identify_fournisseur(doc)
+            
+            if not fournisseur:
+                self.unprocessed_files.append(filename)
+                return
+            
+            # Application de la fonction d'extraction
+            if fournisseur in FOURNI_LCR:
+                self.processed_lcr_files.append(filename)
+            else:
+                self.processed_files.append(filename)
+                
+            try:
+                result = DICT_FOURNI_FONCTION[fournisseur](doc)
+            except Exception as e:
+                print(f"Erreur d'extraction pour {filename} ({fournisseur}): {str(e)}")
+                if fournisseur in FOURNI_LCR:
+                    self.processed_lcr_files.remove(filename)
+                else:
+                    self.processed_files.remove(filename)
+                self.unprocessed_files.append(filename)
+                return
+            
+            # Ajout au DataFrame
+            self.df.loc[len(self.df)] = [fournisseur] + result
+            
+            # Préparation du nouveau nom de fichier
+            self._prepare_file_rename(filename, fournisseur, result)
+    
+    def _identify_fournisseur(self, doc):
+        """Identifie le fournisseur à partir du contenu du PDF."""
+        dict_id_fourni = {nom: 0 for nom in DICT_FOURNI_CLE.keys()}
+        
+        for n in range(len(doc)):
+            page = doc[n]
+            texte_simple = page.get_text()
+            
+            for mot in DICT_FOURNI_CLE.values():
+                if mot in texte_simple:
+                    key = list(DICT_FOURNI_CLE.keys())[list(DICT_FOURNI_CLE.values()).index(mot)]
+                    dict_id_fourni[key] = 1
+        
+        fourni_trouves = [key for key, value in dict_id_fourni.items() if value == 1]
+        
+        if len(fourni_trouves) == 1:
+            return fourni_trouves[0]
+        elif len(fourni_trouves) > 1:
+            raise ValueError(f'Plusieurs fournisseurs identifiés: {fourni_trouves}')
+        else:
+            return None
+    
+    def _prepare_file_rename(self, old_name, fournisseur, result):
+        """Prépare le nouveau nom pour le fichier."""
+        fourni_name = fournisseur.replace("RELAIS VERT AC", "RELAIS VERT")
+        fourni_name = fourni_name.replace("GRAP EQUIPE INTERNE 2", "GRAP EQUIPE INTERNE")
+        
+        # Formatage de la date
+        try:
+            date_parts = result[1].split('/')
+            if len(date_parts) == 3:
+                date_str = f"{date_parts[2]}-{date_parts[1]}-{date_parts[0]}"
+            else:
+                date_str = result[1]
+        except:
+            date_str = result[1]
+        
+        new_name = f'{date_str} - {fourni_name} - {result[0]}.pdf'
+        self.file_rename_dict[old_name] = new_name
+    
+    def _post_process_df(self):
+        """Effectue le post-traitement du DataFrame."""
+        if self.df.empty:
+            return
+            
+        # Nettoyage des noms de fournisseurs
+        self.df['Fournisseur'] = self.df['Fournisseur'].str.replace("RELAIS VERT AC", "RELAIS VERT")
+        self.df['Fournisseur'] = self.df['Fournisseur'].str.replace("GRAP EQUIPE INTERNE 2", "GRAP EQUIPE INTERNE")
+        
+        # Conversion des dates
+        try:
+            self.df['Date'] = pd.to_datetime(self.df['Date'], format="%d/%m/%Y").dt.date
+        except:
+            pass
+        
+        # Tri et suppression des doublons
+        self.df['Top LCR'] = self.df['Fournisseur'].isin(FOURNI_LCR).astype(int)
+        self.df = self.df.sort_values(by=['Top LCR', 'Date'])
+        self.df = self.df.drop_duplicates(subset=list(self.df.columns.drop('Top LCR')))
+        self.df = self.df.drop('Top LCR', axis=1)
+    
+    def move_processed_files(self, processed_dir, lcr_dir, unprocessed_dir):
+        """Déplace les fichiers traités dans les dossiers appropriés."""
+        # Création des dossiers s'ils n'existent pas
+        os.makedirs(processed_dir, exist_ok=True)
+        os.makedirs(lcr_dir, exist_ok=True)
+        os.makedirs(unprocessed_dir, exist_ok=True)
+        
+        # Déplacement des fichiers traités normaux
+        for filename in self.processed_files:
+            source = os.path.join(self.input_dir, filename)
+            if os.path.exists(source):
+                destination = os.path.join(processed_dir, filename)
+                shutil.move(source, destination)
+                
+                # Renommage si nécessaire
+                if filename in self.file_rename_dict:
+                    new_name = self.file_rename_dict[filename]
+                    new_destination = os.path.join(processed_dir, new_name)
+                    os.rename(destination, new_destination)
+        
+        # Déplacement des fichiers LCR
+        for filename in self.processed_lcr_files:
+            source = os.path.join(self.input_dir, filename)
+            if os.path.exists(source):
+                destination = os.path.join(lcr_dir, filename)
+                shutil.move(source, destination)
+                
+                # Renommage si nécessaire
+                if filename in self.file_rename_dict:
+                    new_name = self.file_rename_dict[filename]
+                    new_destination = os.path.join(lcr_dir, new_name)
+                    os.rename(destination, new_destination)
+        
+        # Déplacement des fichiers non traités
+        for filename in self.unprocessed_files:
+            source = os.path.join(self.input_dir, filename)
+            if os.path.exists(source):
+                destination = os.path.join(unprocessed_dir, filename)
+                shutil.move(source, destination)
+    
+    def export_results(self, output_path="resultats.xlsx"):
+        """Exporte les résultats vers un fichier Excel."""
+        if not self.df.empty:
+            self.df.to_excel(output_path, index=False)
+        return output_path

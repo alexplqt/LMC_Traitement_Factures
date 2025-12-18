@@ -1,0 +1,22 @@
+/.venv/
+__pycache__/
+*.pyc
+
+# Dossiers de données (on garde les .gitkeep pour la structure)
+data/input/*
+!data/input/.gitkeep
+
+data/processed/*
+!data/processed/.gitkeep
+
+data/lcr_processed/*
+!data/lcr_processed/.gitkeep
+
+data/unprocessed/*
+!data/unprocessed/.gitkeep
+
+# Fichiers générés
+resultats_*.xlsx
+resultats_et_factures.zip
+
+

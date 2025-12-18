@@ -66,8 +66,8 @@ with st.sidebar:
     st.subheader("📈 Statistiques")
     input_count, _ = get_file_stats(INPUT_DIR)
     processed_count, _ = get_file_stats(PROCESSED_DIR)
-    lcr_count, _ = get_file_stats(LCR_DIR)
     unprocessed_count, _ = get_file_stats(UNPROCESSED_DIR)
+    lcr_count = st.session_state.get('processed_lcr_count', 0)
 
     st.metric("Factures à traiter", input_count)
     st.metric("Factures traitées", processed_count)
@@ -75,15 +75,15 @@ with st.sidebar:
     st.metric("Non traitées", unprocessed_count)
 
 
-def create_results_archive(zip_path: str, excel_path: str, processed_dir: str, lcr_dir: str, unprocessed_dir: str):
-    """Crée une archive ZIP contenant le fichier Excel et les dossiers processed, lcr_processed et unprocessed."""
+def create_results_archive(zip_path: str, excel_path: str, processed_dir: str, unprocessed_dir: str):
+    """Crée une archive ZIP contenant le fichier Excel et les dossiers processed et unprocessed."""
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as archive:
         # Ajouter le fichier Excel
         if os.path.exists(excel_path):
             archive.write(excel_path, arcname=os.path.basename(excel_path))
 
         # Ajouter récursivement le contenu des dossiers de factures
-        for dir_path in [processed_dir, lcr_dir, unprocessed_dir]:
+        for dir_path in [processed_dir, unprocessed_dir]:
             if os.path.exists(dir_path):
                 for root, dirs, files in os.walk(dir_path):
                     for file in files:
@@ -131,7 +131,6 @@ with col2:
                 try:
                     # Nettoyage automatique des dossiers de sortie avant un nouveau traitement
                     clear_directory(PROCESSED_DIR)
-                    clear_directory(LCR_DIR)
                     clear_directory(UNPROCESSED_DIR)
 
                     # Initialisation du processeur
@@ -168,7 +167,6 @@ with col2:
         with st.spinner("Nettoyage en cours..."):
             clear_directory(INPUT_DIR)
             clear_directory(PROCESSED_DIR)
-            clear_directory(LCR_DIR)
             clear_directory(UNPROCESSED_DIR)
             st.success("Tous les dossiers ont été vidés!")
             # Rafraîchir la page
@@ -198,7 +196,6 @@ if 'results_df' in st.session_state and not st.session_state['results_df'].empty
             zip_path,
             st.session_state['output_path'],
             PROCESSED_DIR,
-            LCR_DIR,
             UNPROCESSED_DIR,
         )
 

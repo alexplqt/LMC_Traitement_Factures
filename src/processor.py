@@ -224,14 +224,19 @@ class FactureProcessor:
         self.df = self.df.drop('Top LCR', axis=1)
     
     def move_processed_files(self, processed_dir, lcr_dir, unprocessed_dir):
-        """Déplace les fichiers traités dans les dossiers appropriés."""
+        """Déplace les fichiers traités dans les dossiers appropriés.
+
+        À partir de la V2, toutes les factures traitées (y compris LCR) sont
+        déplacées dans le dossier `processed_dir`. Le paramètre `lcr_dir` est
+        conservé pour compatibilité mais n'est plus utilisé.
+        """
         # Création des dossiers s'ils n'existent pas
         os.makedirs(processed_dir, exist_ok=True)
-        os.makedirs(lcr_dir, exist_ok=True)
         os.makedirs(unprocessed_dir, exist_ok=True)
         
-        # Déplacement des fichiers traités normaux
-        for filename in self.processed_files:
+        # Déplacement de toutes les factures traitées (normales et LCR)
+        all_processed = list(set(self.processed_files + self.processed_lcr_files))
+        for filename in all_processed:
             source = os.path.join(self.input_dir, filename)
             if os.path.exists(source):
                 destination = os.path.join(processed_dir, filename)
@@ -241,19 +246,6 @@ class FactureProcessor:
                 if filename in self.file_rename_dict:
                     new_name = self.file_rename_dict[filename]
                     new_destination = os.path.join(processed_dir, new_name)
-                    os.rename(destination, new_destination)
-        
-        # Déplacement des fichiers LCR
-        for filename in self.processed_lcr_files:
-            source = os.path.join(self.input_dir, filename)
-            if os.path.exists(source):
-                destination = os.path.join(lcr_dir, filename)
-                shutil.move(source, destination)
-                
-                # Renommage si nécessaire
-                if filename in self.file_rename_dict:
-                    new_name = self.file_rename_dict[filename]
-                    new_destination = os.path.join(lcr_dir, new_name)
                     os.rename(destination, new_destination)
         
         # Déplacement des fichiers non traités

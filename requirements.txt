@@ -1,7 +1,7 @@
-streamlit
-pandas
-pymupdf
-openpyxl
+streamlit==1.52.2
+pandas==2.3.3
+pymupdf==1.26.7
+openpyxl==3.1.5
 
 streamlit==1.28.0
 pandas==2.1.0

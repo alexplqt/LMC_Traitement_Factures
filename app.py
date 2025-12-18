@@ -13,7 +13,7 @@ import zipfile
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 try:
-    from src.processor import FactureProcessor
+    from src.processor import FactureProcessor, DICT_FOURNI_CLE
     from utils.file_utils import setup_directories, save_uploaded_files, get_file_stats, clear_directory
 except ImportError as e:
     st.error(f"Erreur d'import: {e}")
@@ -173,6 +173,12 @@ with col2:
             st.success("Tous les dossiers ont été vidés!")
             # Rafraîchir la page
             st.rerun()
+
+    # Liste des fournisseurs gérés
+    with st.expander("📜 Voir la liste des fournisseurs pris en charge"):
+        fournisseurs = sorted(DICT_FOURNI_CLE.keys())
+        for f in fournisseurs:
+            st.write(f"• {f}")
 
 
 st.markdown("---")

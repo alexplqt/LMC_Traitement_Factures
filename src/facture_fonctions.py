@@ -82,7 +82,7 @@ def fonction_relais_local(doc) :
     else : 
         raise ValueError(f"Signe (débit ou crédit) non identifié dans la facture relais local")
     texte_montant_split = texte_montant.split('\n')
-    montant = [mot for mot in texte_montant_split if "," in mot][0]
+    montant = [mot for mot in texte_montant_split if "," in mot][0].replace('\xa0','')
     if signe == -1 :
         montant = '-' + montant
 

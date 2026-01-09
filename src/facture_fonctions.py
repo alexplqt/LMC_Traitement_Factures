@@ -80,7 +80,7 @@ def fonction_relais_local(doc) :
     elif "NET A DEDUIRE" in texte_montant :
         signe = -1
     else : 
-        raise ValueError(f"Signe (débit ou crédit) non identifié dans la facture relais local")
+        assert False, f"Signe (débit ou crédit) non identifié dans la facture relais local numéro {num_fact}"
     texte_montant_split = texte_montant.split('\n')
     montant = [mot for mot in texte_montant_split if "," in mot][0].replace('\xa0','')
     if signe == -1 :

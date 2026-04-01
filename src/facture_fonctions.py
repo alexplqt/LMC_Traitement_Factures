@@ -830,7 +830,7 @@ def fonction_altermonts(doc) :
 # SAINT JEAN => pas d'exemple avoir avoir
 # =============================================================================
 def fonction_st_jean(doc) :
-    import fitz
+
     # On ouvre la première page
     premiere_page = doc[0]
     # Récupération des blocs de texte de première page
@@ -881,7 +881,7 @@ def fonction_st_jean(doc) :
 # BIERE DES REGIONS => avoir ok
 # =============================================================================
 def fonction_biere_region(doc) :
-           
+
     # On ouvre la première page
     premiere_page = doc[0]
     # Récupération des blocs de texte de première page
@@ -933,9 +933,7 @@ def fonction_biere_region(doc) :
 # =============================================================================
 # REVERA => pas d'exemple avec avoir
 # =============================================================================
-def fonction_revera(doc) :
-    import fitz
-           
+def fonction_revera(doc) :          
     # On ouvre la première page
     premiere_page = doc[0]
     # Récupération des blocs de texte de première page

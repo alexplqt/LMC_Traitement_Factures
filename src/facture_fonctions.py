@@ -824,3 +824,159 @@ def fonction_altermonts(doc) :
     montant = infos.replace('€','').strip()
         
     return [num_fact, date, montant]
+
+
+# =============================================================================
+# SAINT JEAN => pas d'exemple avoir avoir
+# =============================================================================
+def fonction_st_jean(doc) :
+    import fitz
+    # On ouvre la première page
+    premiere_page = doc[0]
+    # Récupération des blocs de texte de première page
+    blocs_text = premiere_page.get_text("blocks")
+    
+    # Récupération du numéro de facture et de la date
+    mot_cle_1 = 'Facture N°'
+    for bloc in blocs_text:
+        texte_bloc = bloc[4].strip()
+        if mot_cle_1 in texte_bloc :
+            infos = texte_bloc
+            break
+    # On isole le numéro et la date et on les met dans une variable
+    num_fact = infos.split('\n')[0].split(' ')[-1].strip()
+    date = infos.split('\n')[1].split(' ')[-1].strip()
+      
+    # Recherche du montant => on doit boucler sur toutes les pages car on a des exemples avec une page vide à la fin
+    trouve = 0
+    for num_page in range(len(doc)) :
+        if trouve == 1 :
+            break
+        page = doc[num_page]  
+            # Récupération des blocs de texte de dernière page
+        blocs_text = page.get_text("blocks") 
+            # On définit le delta de coordonnées qu'on a calculé avec un exemple
+        delta = [2.6798095703125, 19.05645751953125, -12.48199462890625, 19.05645751953125]
+            # On cherche d'abord la position du mot clé "NET A PAYER" pour obtenir celle du montant
+        mot_cle = 'NET A PAYER'
+        for bloc in blocs_text:
+            texte_bloc = bloc[4].strip()
+            if mot_cle in texte_bloc :
+                trouve = 1
+                bbox_0 = bloc[0:4] # On récupère les coordonnées de l'emplacement "NET A PAYER"
+                bbox = [sum(x) for x in zip(bbox_0, delta)] # On définit la position avec celle du texte "NET A PAYER" + le delta
+                
+                # On cherche le montant à partir de la position trouvée
+                zone = fitz.Rect(bbox)
+                    # Récupérer le texte dans cette zone
+                infos = page.get_text("text", clip=zone)
+                infos_2 = infos.split('\n')
+                montant = [n for n in infos_2 if '€' in n][0].replace('.',',').replace('€','').strip()
+                break
+ 
+    return [num_fact, date, montant]
+
+
+# =============================================================================
+# BIERE DES REGIONS => avoir ok
+# =============================================================================
+def fonction_biere_region(doc) :
+           
+    # On ouvre la première page
+    premiere_page = doc[0]
+    # Récupération des blocs de texte de première page
+    blocs_text = premiere_page.get_text("blocks")
+    
+    # Récupération du numéro de facture
+    mot_cle_1 = 'Facture'
+    mot_cle_2 = 'Avoir AURA'
+    for bloc in blocs_text:
+        texte_bloc = bloc[4].strip()
+        if (mot_cle_1 in texte_bloc) or (mot_cle_2 in texte_bloc) :
+            infos = texte_bloc
+            break 
+    # On isole le numéro 
+    num_fact = infos.split(' ')[-1].replace('/','_').strip()
+    
+    # Récupération de la date
+    mot_cle_1 = 'Date de facturation'
+    mot_cle_2 = "Date de l'avoir"
+    for bloc in blocs_text:
+        texte_bloc = bloc[4].strip()
+        if (mot_cle_1 in texte_bloc) or (mot_cle_2 in texte_bloc) :
+            infos = texte_bloc
+            break 
+    # On isole la date 
+    date = infos.split('\n')[-1].strip()  
+      
+    # Recherche du montant => je laisse la boucle sur toute les pages maintenant, même si a priori pas besoin, au cas où on a une page vide à la fin
+    trouve = 0
+    for num_page in range(len(doc)) :
+        if trouve == 1 :
+            break
+        page = doc[num_page]  
+            # Récupération des blocs de texte de dernière page
+        blocs_text = page.get_text("blocks")
+        mot_cle_1 = 'Montant dû'
+        # mot_cle_2 = "Date de l'avoir"
+        for bloc in blocs_text:
+            texte_bloc = bloc[4].strip()
+            if (mot_cle_1 in texte_bloc) : #or (mot_cle_2 in texte_bloc) :
+                trouve = 1
+                infos = texte_bloc
+                break 
+    montant = infos.split('\n')[-1].replace('€','').strip()
+    
+    return [num_fact, date, montant]
+
+
+# =============================================================================
+# REVERA => pas d'exemple avec avoir
+# =============================================================================
+def fonction_revera(doc) :
+    import fitz
+           
+    # On ouvre la première page
+    premiere_page = doc[0]
+    # Récupération des blocs de texte de première page
+    blocs_text = premiere_page.get_text("blocks")
+    
+    # Récupération du numéro de facture
+    mot_cle_1 = 'Facture'
+    # mot_cle_2 = 'Avoir AURA'
+    for bloc in blocs_text:
+        texte_bloc = bloc[4].strip()
+        if (mot_cle_1 in texte_bloc) : #or (mot_cle_2 in texte_bloc) :
+            infos = texte_bloc
+            break 
+    # On isole le numéro 
+    num_fact = infos.split(' ')[-1].replace('/','_').strip()
+    
+    # Récupération de la date
+    
+    bbox_date = ((26.24, 276.61, 82.958, 288.90)) # coordonnées x0, y0, x1, y1 du bloc qui contient la date
+    zone_date = fitz.Rect(bbox_date)
+        # Récupérer le texte dans cette zone
+    texte_date = premiere_page.get_text("text", clip=zone_date)
+    date = texte_date.strip()
+      
+    # Recherche du montant => je laisse la boucle sur toute les pages maintenant, même si a priori pas besoin, au cas où on a une page vide à la fin
+    trouve = 0
+    for num_page in range(len(doc)) :
+        if trouve == 1 :
+            break
+        page = doc[num_page]  
+            # Récupération des blocs de texte de dernière page
+        blocs_text = page.get_text("blocks")
+        mot_cle_1 = 'Total'
+        # mot_cle_2 = "Date de l'avoir"
+        for bloc in blocs_text:
+            texte_bloc = bloc[4].strip()
+            if (mot_cle_1 in texte_bloc) : #or (mot_cle_2 in texte_bloc) :
+                trouve = 1
+                infos = texte_bloc
+                break 
+    montant = infos.split('\n')[-1].replace('€','').strip()
+
+    
+    return [num_fact, date, montant]

@@ -38,6 +38,9 @@ DICT_FOURNI_CLE = {
     "ENERGIE D'ICI": "www.energiedici.fr",
     "FERME BIO MARGERIE": "SARL Margerie",
     "ALTERMONTS": "SAS AlterMonts",
+    "SAINT JEAN" : "www.saint-jean.fr",
+    'BIERE DES REGIONS' : "BIERES DES REGIONS AURA",
+    'REVERA' : 'REVERA - SCIC SA',
 }
 
 # Dictionnaire des fournisseurs et leurs fonctions
@@ -67,6 +70,9 @@ DICT_FOURNI_FONCTION = {
     "ENERGIE D'ICI": fonction_energie_ici,
     "FERME BIO MARGERIE": fonction_margerie,
     "ALTERMONTS": fonction_altermonts,
+    "SAINT JEAN" : fonction_st_jean,
+    'BIERE DES REGIONS' : fonction_biere_region,
+    'REVERA' : fonction_revera,
 }
 
 # Liste des fournisseurs gérés par LCR

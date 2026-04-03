@@ -23,7 +23,7 @@ DICT_FOURNI_CLE = {
     "EPICE": "SCOP EPICE",
     "COOP LAITIERE DE YENNE": "SOCIETE COOPERATIVE LAITIERE de YENNE",
     "AGIDRA": "SNC AGIDRA",
-    'DDS': "DDS DISTRIBUTION",
+    'DDS': "contact@ddspro.fr",
     "HALLE BIO D'OCCITANIE": "halle-bio",
     'GRAP LOGISTIQUE': "GRAP - Logistique",
     "GRAP EQUIPE INTERNE": "GRAP Equipe Interne",

@@ -353,24 +353,33 @@ def fonction_dds(doc) :
     premiere_page = doc[0]
     blocs_text = premiere_page.get_text("blocks")
 
-    # Récupération de la date et du numéro de facture 
-    mot_cle_1 = 'N°Facture'
+    # Récupération du numéro de facture 
+    mot_cle_1 = 'N° Facture'
+    # mot_cle_2 = 'N° Facture'
     for bloc in blocs_text:
         texte_bloc = bloc[4].strip()
-        if (mot_cle_1 in texte_bloc) :
+        if (mot_cle_1 in texte_bloc) : #or (mot_cle_2 in texte_bloc) :
             infos = texte_bloc
             break
-    infos_split = infos.split('\n')
-    date = infos_split[2]
-    num_fact = infos_split[3]  
-    
+    num_fact = infos.split('\n')[1].strip()  
+
+    # Récupération de la date
+    mot_cle_1 = 'Date Facture'
+    # mot_cle_2 = 'N° Facture'
+    for bloc in blocs_text:
+        texte_bloc = bloc[4].strip()
+        if (mot_cle_1 in texte_bloc) : #or (mot_cle_2 in texte_bloc) :
+            infos = texte_bloc
+            break
+    date = infos.split('\n')[1].strip() 
+ 
     # Récupération du montant
     derniere_page = doc[-1]
-    bbox = (520.1199951171875, 705.8599853515625, 559.8741455078125, 743.68701171875) # coordonnées x0, y0, x1, y1 du bloc qui contient le montant
+    bbox = (216.67581176757812, 744.9271240234375, 562.5208129882812, 764.8617553710938) # coordonnées x0, y0, x1, y1 du bloc qui contient le montant
     zone = fitz.Rect(bbox)
         # Récupérer le texte dans cette zone
     infos = derniere_page.get_text("text", clip=zone)
-    montant = infos.strip().replace('.',',')
+    montant = infos.split('\n')[-2].replace('EUR','').replace(' ','').strip()
             
     return [num_fact, date, montant]
 

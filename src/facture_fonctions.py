@@ -672,9 +672,10 @@ def fonction_grain_de_sail(doc) :
     
     # Récupération du numéro de facture
     mot_cle_1 = 'Réf. :'
+    mot_cle_2 = 'Facture '
     for bloc in blocs_text:
         texte_bloc = bloc[4].strip()
-        if (mot_cle_1 in texte_bloc) :
+        if (mot_cle_1 in texte_bloc) or (mot_cle_2 in texte_bloc) :
             infos = texte_bloc
             break 
     num_fact = infos.split(' ')[-1].strip()

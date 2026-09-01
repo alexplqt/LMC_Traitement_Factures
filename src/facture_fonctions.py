@@ -315,29 +315,50 @@ def fonction_coop_yenne(doc) :
 # AGIDRA  => pas d'exemple avec avoir
 # =============================================================================
 def fonction_agidra(doc) :
+    # Détermination de la date et du numéro de facture
     premiere_page = doc[0]
+    blocs_text = premiere_page.get_text("blocks")   
 
-    # Récupération du numéro de facture
-    bbox = (126.19999694824219, 100.09099578857422, 193.38148498535156, 108.80359649658203)
-    zone = fitz.Rect(bbox)
-        # Récupérer le texte dans cette zone
-    infos = premiere_page.get_text("text", clip=zone)
-    num_fact = infos.strip().replace('/','_') # on remplace le / par _ sinon on va avoir des problèmes pour les chemins
-    
-    # Récupération de la date
-    bbox = (127.19999694824219, 127.51949310302734, 409.3546142578125, 152.66717529296875)
-    zone = fitz.Rect(bbox)
-        # Récupérer le texte dans cette zone
-    infos = premiere_page.get_text("text", clip=zone)
-    date = infos.split('\n')[0].strip()
-    
+        # On définit le delta de coordonnées qu'on a calculé avec un exemple
+    delta = [137.9765625, 0.0, 159.0, 0.0]
+        # On cherche d'abord la position du mot clé "Date :" pour obtenir celle du montant
+    mot_cle = 'Date :'
+    for bloc in blocs_text:
+        texte_bloc = bloc[4].strip()
+        if mot_cle in texte_bloc :
+            bbox_0 = bloc[0:4] # On récupère les coordonnées de l'emplacement "Date :"
+            bbox = [sum(x) for x in zip(bbox_0, delta)] # On définit la position avec celle du texte + le delta
+            
+            # On cherche le montant à partir de la position trouvée
+            zone = fitz.Rect(bbox)
+                # Récupérer le texte dans cette zone
+            infos = premiere_page.get_text("text", clip=zone)
+            break
+    date = infos.strip()
+
+        # On duplique pour le numéro
+    mot_cle_2 = 'Numéro pièce :'
+    for bloc in blocs_text:
+        texte_bloc = bloc[4].strip()
+        if mot_cle_2 in texte_bloc :
+            bbox_0 = bloc[0:4] # On récupère les coordonnées de l'emplacement "Date :"
+            bbox_2 = [sum(x) for x in zip(bbox_0, delta)] # On définit la position avec celle du texte + le delta
+            
+            # On cherche le montant à partir de la position trouvée
+            zone_2 = fitz.Rect(bbox_2)
+                # Récupérer le texte dans cette zone
+            infos_2 = premiere_page.get_text("text", clip=zone_2)
+            break
+    num_fact = infos_2.strip()
+
     # Récupération du montant
     derniere_page = doc[-1]
     blocs_text = derniere_page.get_text("blocks")
-    mot_cle_1 = 'NET À PAYER'
+    mot_cle_1 = 'TOTAL TTC'
+    # mot_cle_2 = 'AVOIR No'
     for bloc in blocs_text:
         texte_bloc = bloc[4].strip()
-        if (mot_cle_1 in texte_bloc) :
+        if (mot_cle_1 in texte_bloc) : #or (mot_cle_2 in texte_bloc) :
             infos = texte_bloc
             break
     infos = infos.split('\n')
